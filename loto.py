@@ -44,24 +44,27 @@ for extr in extrageri_asc:
 
 indexes_asc = sorted(indexes, key=itemgetter(0))
 
-
 def find_neighbors(numbers, value):
+  # helper function to find the closest values to the searched value
+  def closest_neighbors(value):
+    closest = min(numbers, key=lambda x: abs(x - value))
+    index = numbers.index(closest)
+    before = numbers[index - 1] if index > 0 else None
+    after = numbers[index + 1] if index < len(numbers) - 1 else None
+    return before, after
+
   try:
     # find the index of the searched value in the list
     index = numbers.index(value)
 
     # get the values at the index before and after the searched value
-    before = numbers[index - 1] if index > 0 else None
-    after = numbers[index + 1] if index < len(numbers) - 1 else None
+    before, after = closest_neighbors(value)
 
     # return the neighbors and a message indicating that the searched value was found
     return before, after, "Value found in list"
   except ValueError:
     # if the value is not in the list, find the closest values
-    closest = min(numbers, key=lambda x: abs(x - value))
-    index = numbers.index(closest)
-    before = numbers[index - 1] if index > 0 else None
-    after = numbers[index + 1] if index < len(numbers) - 1 else None
+    before, after = closest_neighbors(value)
 
     # return the neighbors and a message indicating that the searched value was not found
     return before, after, "Value not found in list"
