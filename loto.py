@@ -1,8 +1,6 @@
 # generate a list of all the possible combinations of 6 numbers from 1 to 49
-#
 import pandas as pd
 import warnings
-from bisect import bisect_right
 from operator import itemgetter
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -33,13 +31,11 @@ xl_file = pd.ExcelFile(file_name)
 df = pd.read_excel(file_name, sheet_name='Sheet2')
 df.loc[0]
 df['Data tragerii->'] = df['Data tragerii->'].dt.strftime('%Y-%m-%d')
-
+xl_file.close()
 extrageri = df.values.tolist()
 
 extrageri_asc = [[varianta[0], sorted(varianta[1:7])] for varianta in extrageri]
-#
-# [j.pop(0) for j in extrageri]
-# [k.sort() for k in extrageri]
+
 
 indexes = []
 for extr in extrageri_asc:
@@ -49,35 +45,37 @@ for extr in extrageri_asc:
 indexes_asc = sorted(indexes, key=itemgetter(0))
 
 
-def neighbours(value, indexes):
-    # right = the index of the first number in my_list that is larger than value
-    right = bisect_right(indexes_plain, value)
+def find_neighbors(numbers, value):
+  try:
+    # find the index of the searched value in the list
+    index = numbers.index(value)
 
-    # Case where value is in my_list
-    if indexes_plain[right - 1] == value:
-        bounds = [indexes_plain[right - 1]]
+    # get the values at the index before and after the searched value
+    before = numbers[index - 1] if index > 0 else None
+    after = numbers[index + 1] if index < len(numbers) - 1 else None
 
-    # No lower bound or upper bound
-    elif right == 0:
-        bounds = ["No lower bound", indexes_plain[right]]
-    elif right == len(indexes_plain):
-        bounds = [indexes_plain[right - 1], "No upper bound"]
+    # return the neighbors and a message indicating that the searched value was found
+    return before, after, "Value found in list"
+  except ValueError:
+    # if the value is not in the list, find the closest values
+    closest = min(numbers, key=lambda x: abs(x - value))
+    index = numbers.index(closest)
+    before = numbers[index - 1] if index > 0 else None
+    after = numbers[index + 1] if index < len(numbers) - 1 else None
 
-    # value is in between 2 values in my_list
-    else:
-        bounds = [indexes_plain[right - 1], indexes_plain[right]]
-    return bounds
+    # return the neighbors and a message indicating that the searched value was not found
+    return before, after, "Value not found in list"
 
 
 ### show neighbours
 
-value = 4229610
+value = 6875120
 indexes_plain = [i[0] for i in indexes_asc]
-nei = neighbours(value, indexes_plain)
-nei
+
+find_neighbors(indexes_plain, value)
 
 ###
-all_numbers.index([3,13,26,28,29,30])
+all_numbers.index([5, 22, 27, 30, 34, 49])
 
 # with open('e:\loto_indexex.txt', 'w') as f:
 #     for line in indexes:
