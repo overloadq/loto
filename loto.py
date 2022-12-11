@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 from operator import itemgetter
 from itertools import combinations
+from pprint import pprint
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -41,41 +42,60 @@ for win in winnings:
 win_index_asc = sorted(win_index, key=itemgetter(0))
 
 
+class Neighbours:
+    def __init__(self, mylist, value, all_numbers):
+        self.before = None
+        self.after = None
+        self.mylist = mylist
+        self.all_numbers = all_numbers
+        self.value = value
+        self.found = ""
 
-def find_neighbors(numbers, value):
-    """numbers list is like: [20832, '2017-03-23', [1, 2, 4, 11, 35, 39]]"""
-    # helper function to find the closest values to the searched value
-    def closest_neighbors(value):
-        closest = min(numbers, key=lambda x: abs(x - value))
-        index = numbers.index(closest)
-        before = numbers[index - 1] if index > 0 else None
-        after = numbers[index + 1] if index < len(numbers) - 1 else None
-        return before, after
+        numbers = [n[0] for n in self.mylist]
 
-    try:
-        # find the index of the searched value in the list
-        index = numbers.index(value)
+        # helper function to find the closest values to the searched value
+        def closest_neighbors(value):
+            closest = min(numbers, key=lambda x: abs(x - value))
+            index = numbers.index(closest)
+            self.before = numbers[index - 1] if index > 0 else None
+            self.after = numbers[index + 1] if index < len(numbers) - 1 else None
 
-        # get the values at the index before and after the searched value
-        before, after = closest_neighbors(value)
+        try:
+            # find the index of the searched value in the list
+            index = numbers.index(value)
 
-        # return the neighbors and a message indicating that the searched value was found
-        return before, after, "Value found in list"
-    except ValueError:
-        # if the value is not in the list, find the closest values
-        before, after = closest_neighbors(value)
+            # get the values at the index before and after the searched value
+            closest_neighbors(value)
 
-        # return the neighbors and a message indicating that the searched value was not found
-        return before, after, "Value not found in list"
+            # return a message indicating that the searched value was found
+            self.found = "Value found in list"
+        except ValueError:
+            # if the value is not in the list, find the closest values
+            closest_neighbors(value)
+
+            # return a message indicating that the searched value was not found
+            self.found = "Value not found in list"
+
+    def select_lines(self):
+        lines = []
+        indexes = [self.before, self.after]
+        for win in self.mylist:
+            if win[0] is not None and win[0] in indexes:
+                lines.append(win)
+        lines.append(self.found)
+        searched = ["My Search:", self.value, self.all_numbers[self.value]]
+        lines.append(searched)
+        return lines
 
 
 ### show neighbours
 
-indexes_plain = [i[0] for i in win_index_asc]
 
+value = 6258744
+n = Neighbours(win_index_asc, value, all_numbers)
 
-value = 6788360
-find_neighbors(indexes_plain, 6788360)
+pprint(n.select_lines())
+
 
 ###
 all_numbers.index([5, 22, 27, 30, 34, 49])
