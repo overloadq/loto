@@ -4,8 +4,25 @@ import warnings
 from operator import itemgetter
 from itertools import combinations
 from pprint import pprint
+import time
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+# get the start time
+st = time.time()
+
+
+def prime_factorization(number):
+    factors = []
+    # Start with the smallest prime number (2)
+    divisor = 2
+    while number > 1:
+        # If the number is divisible by the divisor, add it to the list of factors and divide the number by the divisor
+        while number % divisor == 0:
+            factors.append(divisor)
+            number = number / divisor
+        # Increment the divisor by 1
+        divisor += 1
+    return factors
 
 
 def generate_all_combinations():
@@ -14,9 +31,9 @@ def generate_all_combinations():
     # generate all possible combinations of 6 numbers from the list of numbers
     combinations_list = list(combinations(numbers, 6))
     # convert each tuple in the combinations_list to a list
-    combinations_lists = [list(t) for t in combinations_list]
+    # combinations_lists = [list(t) for t in combinations_list]
     # return the list of lists
-    return combinations_lists
+    return combinations_list
 
 
 all_numbers = generate_all_combinations()
@@ -36,7 +53,7 @@ winnings = [[field[0], sorted(field[1:7])] for field in extrageri]
 # map the indexes of the winning numbers with the indexes of all the possibilities, 13.983.816 combination
 win_index = []
 for win in winnings:
-    a = [all_numbers.index(win[1]), win[0], win[1]]
+    a = [all_numbers.index(tuple(win[1])), win[0], win[1]]
     win_index.append(a)
 
 win_index_asc = sorted(win_index, key=itemgetter(0))
@@ -90,15 +107,24 @@ class Neighbours:
 
 ### show neighbours
 
+show = win_index[-70:]
 
-value = 6258744
+pprint(show)
+factor = [prime_factorization(f[0]) for f in show]
+pprint(factor)
+
+value = 5828641
 n = Neighbours(win_index_asc, value, all_numbers)
-
 pprint(n.select_lines())
 
+# get the end time
+et = time.time()
+
+elapsed_time = et - st
+print('Execution time:', elapsed_time, 'seconds')
 
 ###
-all_numbers.index([5, 22, 27, 30, 34, 49])
+# all_numbers.index([5, 22, 27, 30, 34, 49])
 
 # with open('e:\loto_indexex.txt', 'w') as f:
 #     for line in indexes:
