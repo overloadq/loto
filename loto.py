@@ -53,7 +53,8 @@ winnings = [[field[0], sorted(field[1:7])] for field in extrageri]
 # map the indexes of the winning numbers with the indexes of all the possibilities, 13.983.816 combination
 win_index = []
 for win in winnings:
-    a = [all_numbers.index(tuple(win[1])), win[0], win[1]]
+    my_index = all_numbers.index(tuple(win[1]))
+    a = [my_index, win[0], win[1], prime_factorization(my_index)]
     win_index.append(a)
 
 win_index_asc = sorted(win_index, key=itemgetter(0))
@@ -100,7 +101,7 @@ class Neighbours:
             if win[0] is not None and win[0] in indexes:
                 lines.append(win)
         lines.append(self.found)
-        searched = ["My Search:", self.value, self.all_numbers[self.value]]
+        searched = ["My Search:", self.value, self.all_numbers[self.value], prime_factorization(self.value)]
         lines.append(searched)
         return lines
 
@@ -108,15 +109,16 @@ class Neighbours:
 ### show neighbours
 
 show = win_index[-70:]
-
 pprint(show)
-factor = [prime_factorization(f[0]) for f in show]
-pprint(factor)
 
-value = 5828641
+# factor = [prime_factorization(f[0]) for f in show]
+# pprint(factor)
+
+value = 9286712
 n = Neighbours(win_index_asc, value, all_numbers)
 pprint(n.select_lines())
 
+prime_factorization(value)
 # get the end time
 et = time.time()
 
@@ -124,7 +126,7 @@ elapsed_time = et - st
 print('Execution time:', elapsed_time, 'seconds')
 
 ###
-# all_numbers.index([5, 22, 27, 30, 34, 49])
+# all_numbers.index((5, 22, 27, 30, 34, 49))
 
 # with open('e:\loto_indexex.txt', 'w') as f:
 #     for line in indexes:
