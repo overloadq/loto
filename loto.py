@@ -6,7 +6,14 @@ from itertools import combinations
 from pprint import pprint
 import time
 
+import numpy as np
+# import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 # get the start time
 st = time.time()
 
@@ -106,15 +113,74 @@ class Neighbours:
         return lines
 
 
-### show neighbours
+class WinIndexModel:
+    def __init__(self, win_index):
+        self.df = pd.DataFrame(win_index, columns=["index", "date", "numbers", "factors"])
+        self.df = self.df[["index", "date"]]
+        self.df["date"] = pd.to_datetime(self.df["date"])
+        self.df["date"] = (self.df["date"] - self.df["date"].min()) / np.timedelta64(365, 'D')
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.df[["date"]], self.df["index"],
+                                                                                test_size=0.2)
+        self.model = LinearRegression()
+        self.model.fit(self.X_train, self.y_train)
 
+    def evaluate(self):
+        y_pred = self.model.predict(self.X_test)
+        mse = mean_squared_error(self.y_test, y_pred)
+        # print(f"Mean Squared Error: {mse:.2f}")
+        return mse
+
+    def predict(self, future_date):
+        future_date = pd.to_datetime(future_date)
+        future_date = (future_date - pd.to_datetime(self.df["date"].min())) / np.timedelta64(365, 'D')
+        prediction = int(self.model.predict([[future_date]])[0])
+        # print(f"Prediction for {future_date}: {prediction}")
+        return prediction
+
+
+# model = WinIndexModel(win_index)
+# mse = model.evaluate()
+# prediction = model.predict("2023-01-11")
+
+
+class MSE_Prediction:
+    def __init__(self, win_index, future_date):
+        self.win_index = win_index
+        self.future_date = future_date
+        self.pairs = []
+
+    def run_n_times(self, n):
+        for i in range(n):
+            model = WinIndexModel(self.win_index)
+            mse = model.evaluate()
+            prediction = model.predict(self.future_date)
+            self.pairs.append((mse, prediction))
+
+    def get_min_pair(self):
+        min_pair = min(self.pairs, key=lambda x: x[0])
+        min_first = min_pair[0]
+        min_second = min_pair[1]
+        print("Smallest first element:", min_first)
+        print("Second element in pair for smallest first:", min_second)
+        return min_second
+
+
+mse_pred = MSE_Prediction(win_index, "2023-01-11")
+mse_pred.run_n_times(10000)
+best_prediction = mse_pred.get_min_pair()
+
+n = Neighbours(win_index_asc, best_prediction, all_numbers)
+pprint(n.select_lines())
+
+### show neighbours
+# if __name__ == "__main__":
 show = win_index[-70:]
 pprint(show)
 
 # factor = [prime_factorization(f[0]) for f in show]
 # pprint(factor)
 
-value = 9286712
+value = 6067946
 n = Neighbours(win_index_asc, value, all_numbers)
 pprint(n.select_lines())
 
@@ -125,7 +191,6 @@ et = time.time()
 elapsed_time = et - st
 print('Execution time:', elapsed_time, 'seconds')
 
-###
 # all_numbers.index((5, 22, 27, 30, 34, 49))
 
 # with open('e:\loto_indexex.txt', 'w') as f:
