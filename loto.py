@@ -1,11 +1,12 @@
 # generate a list of all the possible combinations of 6 numbers from 1 to 49
 import pandas as pd
+import os
 import warnings
 from operator import itemgetter
 from itertools import combinations
 from pprint import pprint
 import time
-
+from progress.bar import Bar
 import numpy as np
 # import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -16,6 +17,25 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 # get the start time
 st = time.time()
+
+
+# bar = Bar('Processing', max=10000)
+#
+#
+# class ProgressBarDecorator:
+#     def __init__(self, max_value):
+#         self.max_value = max_value
+#         self.bar = Bar('Processing', max=max_value)
+#
+#     def __call__(self, func):
+#         def wrapped_func(*args, **kwargs):
+#             result = func(*args, **kwargs)
+#             self.bar.next()
+#             if self.bar.index == self.max_value:
+#                 self.bar.finish()
+#             return result
+#
+#         return wrapped_func
 
 
 def prime_factorization(number):
@@ -43,28 +63,30 @@ def generate_all_combinations():
     return combinations_list
 
 
-all_numbers = generate_all_combinations()
+def process_lottery_data(file_path):
+    if not os.path.exists(file_path):
+        raise ValueError(f"The file {file_path} does not exist.")
+    with pd.ExcelFile(file_path) as xl_file:
+        df = pd.read_excel(file_path, sheet_name='Sheet2')
+        df['Data tragerii->'] = df['Data tragerii->'].dt.strftime('%Y-%m-%d')
+        winnings = [[row[0], sorted(row[1:7])] for row in df.values.tolist()]
+    return winnings
 
-# Open the excel file containing the winning lottery numbers, from 2016
-# return the content as a list
-file_name = ("e:\loto.xlsx")
-with pd.ExcelFile(file_name) as xl_file:
-    df = pd.read_excel(file_name, sheet_name='Sheet2')
-    # df.loc[0]
-    df['Data tragerii->'] = df['Data tragerii->'].dt.strftime('%Y-%m-%d')
-    extrageri = df.values.tolist()
 
-# order the number ascending
-winnings = [[field[0], sorted(field[1:7])] for field in extrageri]
+def map_win_index(all_numbers, winnings):
+    win_index = []
+    for win in winnings:
+        my_index = all_numbers.index(tuple(win[1]))
+        a = [my_index, win[0], win[1], calculate_gap(win[1]), prime_factorization(my_index)]
+        win_index.append(a)
+    return win_index
 
-# map the indexes of the winning numbers with the indexes of all the possibilities, 13.983.816 combination
-win_index = []
-for win in winnings:
-    my_index = all_numbers.index(tuple(win[1]))
-    a = [my_index, win[0], win[1], prime_factorization(my_index)]
-    win_index.append(a)
 
-win_index_asc = sorted(win_index, key=itemgetter(0))
+def calculate_gap(numbers):
+    gap = []
+    for i in range(len(numbers)-1):
+        gap.append(numbers[i + 1] - numbers[i])
+    return gap
 
 
 class Neighbours:
@@ -110,7 +132,8 @@ class Neighbours:
         lines.append(self.found)
         searched = ["My Search:", self.value, self.all_numbers[self.value], prime_factorization(self.value)]
         lines.append(searched)
-        return lines
+        # return lines
+        return searched
 
 
 class WinIndexModel:
@@ -160,31 +183,37 @@ class MSE_Prediction:
         min_pair = min(self.pairs, key=lambda x: x[0])
         min_first = min_pair[0]
         min_second = min_pair[1]
-        print("Smallest first element:", min_first)
-        print("Second element in pair for smallest first:", min_second)
+        # print("Smallest first element:", min_first)
+        # print("Second element in pair for smallest first:", min_second)
         return min_second
 
 
-mse_pred = MSE_Prediction(win_index, "2023-01-11")
-mse_pred.run_n_times(10000)
-best_prediction = mse_pred.get_min_pair()
+all_numbers = generate_all_combinations()
+file_path = "e:\loto.xlsx"
+winnings = process_lottery_data(file_path)
+win_index = map_win_index(all_numbers, winnings)
+win_index_asc = sorted(win_index, key=itemgetter(0))
 
-n = Neighbours(win_index_asc, best_prediction, all_numbers)
-pprint(n.select_lines())
+for r in range(50):
+    mse_pred = MSE_Prediction(win_index, "2023-01-15")
+    mse_pred.run_n_times(1000)
+    best_prediction = mse_pred.get_min_pair()
+    n = Neighbours(win_index_asc, best_prediction, all_numbers)
+    pprint(n.select_lines())
 
 ### show neighbours
 # if __name__ == "__main__":
-show = win_index[-70:]
-pprint(show)
+# show = win_index[-70:]
+# pprint(show)
 
 # factor = [prime_factorization(f[0]) for f in show]
 # pprint(factor)
 
-value = 6067946
-n = Neighbours(win_index_asc, value, all_numbers)
-pprint(n.select_lines())
+# value = 6067946
+# n = Neighbours(win_index_asc, value, all_numbers)
+# pprint(n.select_lines())
 
-prime_factorization(value)
+# prime_factorization(value)
 # get the end time
 et = time.time()
 
@@ -193,6 +222,8 @@ print('Execution time:', elapsed_time, 'seconds')
 
 # all_numbers.index((5, 22, 27, 30, 34, 49))
 
-# with open('e:\loto_indexex.txt', 'w') as f:
-#     for line in indexes:
-#         f.write(f"{line}\n")
+with open('e:\\loto_gaps.txt', 'w') as f:
+    for line in win_index:
+        # f.write(f"{line}\n")
+        output = ";".join(map(str, line))
+        f.write(output+'\n')
