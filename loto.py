@@ -6,7 +6,7 @@ from operator import itemgetter
 from itertools import combinations
 from pprint import pprint
 import time
-from progress.bar import Bar
+# from progress.bar import Bar
 import numpy as np
 # import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -78,6 +78,7 @@ def map_win_index(all_numbers, winnings):
     for win in winnings:
         my_index = all_numbers.index(tuple(win[1]))
         a = [my_index, win[0], win[1], calculate_gap(win[1]), prime_factorization(my_index)]
+        # a = [my_index, win[0], win[1], prime_factorization(my_index)]
         win_index.append(a)
     return win_index
 
@@ -90,10 +91,10 @@ def calculate_gap(numbers):
 
 
 class Neighbours:
-    def __init__(self, mylist, value, all_numbers):
+    def __init__(self, win_index_asc, value, all_numbers):
         self.before = None
         self.after = None
-        self.mylist = mylist
+        self.mylist = win_index_asc
         self.all_numbers = all_numbers
         self.value = value
         self.found = ""
@@ -130,7 +131,8 @@ class Neighbours:
             if win[0] is not None and win[0] in indexes:
                 lines.append(win)
         lines.append(self.found)
-        searched = ["My Search:", self.value, self.all_numbers[self.value], prime_factorization(self.value)]
+        searched = ["My Search:", self.value, self.all_numbers[self.value], calculate_gap(self.all_numbers[self.value]),
+                    prime_factorization(self.value)]
         lines.append(searched)
         # return lines
         return searched
@@ -138,7 +140,7 @@ class Neighbours:
 
 class WinIndexModel:
     def __init__(self, win_index):
-        self.df = pd.DataFrame(win_index, columns=["index", "date", "numbers", "factors"])
+        self.df = pd.DataFrame(win_index, columns=["index", "date", "numbers", "gap", "factors"])
         self.df = self.df[["index", "date"]]
         self.df["date"] = pd.to_datetime(self.df["date"])
         self.df["date"] = (self.df["date"] - self.df["date"].min()) / np.timedelta64(365, 'D')
@@ -189,14 +191,14 @@ class MSE_Prediction:
 
 
 all_numbers = generate_all_combinations()
-file_path = "e:\loto.xlsx"
+file_path = "e:\\loto.xlsx"
 winnings = process_lottery_data(file_path)
 win_index = map_win_index(all_numbers, winnings)
 win_index_asc = sorted(win_index, key=itemgetter(0))
 
 for r in range(50):
-    mse_pred = MSE_Prediction(win_index, "2023-01-15")
-    mse_pred.run_n_times(1000)
+    mse_pred = MSE_Prediction(win_index, "2023-01-22")
+    mse_pred.run_n_times(100)
     best_prediction = mse_pred.get_min_pair()
     n = Neighbours(win_index_asc, best_prediction, all_numbers)
     pprint(n.select_lines())
