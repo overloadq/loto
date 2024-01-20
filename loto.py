@@ -1,4 +1,3 @@
-# generate a list of all the possible combinations of 6 numbers from 1 to 49
 import pandas as pd
 import os
 import warnings
@@ -6,62 +5,30 @@ from operator import itemgetter
 from itertools import combinations
 from pprint import pprint
 import time
-# from progress.bar import Bar
 import numpy as np
-# import pandas as pd
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
-# get the start time
-st = time.time()
-
-
-# bar = Bar('Processing', max=10000)
-#
-#
-# class ProgressBarDecorator:
-#     def __init__(self, max_value):
-#         self.max_value = max_value
-#         self.bar = Bar('Processing', max=max_value)
-#
-#     def __call__(self, func):
-#         def wrapped_func(*args, **kwargs):
-#             result = func(*args, **kwargs)
-#             self.bar.next()
-#             if self.bar.index == self.max_value:
-#                 self.bar.finish()
-#             return result
-#
-#         return wrapped_func
-
 
 def prime_factorization(number):
     factors = []
-    # Start with the smallest prime number (2)
     divisor = 2
     while number > 1:
-        # If the number is divisible by the divisor, add it to the list of factors and divide the number by the divisor
         while number % divisor == 0:
             factors.append(divisor)
             number = number / divisor
-        # Increment the divisor by 1
         divisor += 1
     return factors
 
-
 def generate_all_combinations():
-    # create a list of all numbers in the range 1 to 49
     numbers = list(range(1, 50))
-    # generate all possible combinations of 6 numbers from the list of numbers
     combinations_list = list(combinations(numbers, 6))
-    # convert each tuple in the combinations_list to a list
-    # combinations_lists = [list(t) for t in combinations_list]
-    # return the list of lists
     return combinations_list
-
 
 def process_lottery_data(file_path):
     if not os.path.exists(file_path):
@@ -72,23 +39,19 @@ def process_lottery_data(file_path):
         winnings = [[row[0], sorted(row[1:7])] for row in df.values.tolist()]
     return winnings
 
-
 def map_win_index(all_numbers, winnings):
     win_index = []
     for win in winnings:
         my_index = all_numbers.index(tuple(win[1]))
         a = [my_index, win[0], win[1], calculate_gap(win[1]), prime_factorization(my_index)]
-        # a = [my_index, win[0], win[1], prime_factorization(my_index)]
         win_index.append(a)
     return win_index
-
 
 def calculate_gap(numbers):
     gap = []
     for i in range(len(numbers)-1):
         gap.append(numbers[i + 1] - numbers[i])
     return gap
-
 
 class Neighbours:
     def __init__(self, win_index_asc, value, all_numbers):
@@ -101,7 +64,6 @@ class Neighbours:
 
         numbers = [n[0] for n in self.mylist]
 
-        # helper function to find the closest values to the searched value
         def closest_neighbors(value):
             closest = min(numbers, key=lambda x: abs(x - value))
             index = numbers.index(closest)
@@ -109,19 +71,11 @@ class Neighbours:
             self.after = numbers[index + 1] if index < len(numbers) - 1 else None
 
         try:
-            # find the index of the searched value in the list
             index = numbers.index(value)
-
-            # get the values at the index before and after the searched value
             closest_neighbors(value)
-
-            # return a message indicating that the searched value was found
             self.found = "Value found in list"
         except ValueError:
-            # if the value is not in the list, find the closest values
             closest_neighbors(value)
-
-            # return a message indicating that the searched value was not found
             self.found = "Value not found in list"
 
     def select_lines(self):
@@ -134,9 +88,7 @@ class Neighbours:
         searched = ["My Search:", self.value, self.all_numbers[self.value], calculate_gap(self.all_numbers[self.value]),
                     prime_factorization(self.value)]
         lines.append(searched)
-        # return lines
         return searched
-
 
 class WinIndexModel:
     def __init__(self, win_index):
@@ -152,21 +104,13 @@ class WinIndexModel:
     def evaluate(self):
         y_pred = self.model.predict(self.X_test)
         mse = mean_squared_error(self.y_test, y_pred)
-        # print(f"Mean Squared Error: {mse:.2f}")
         return mse
 
     def predict(self, future_date):
         future_date = pd.to_datetime(future_date)
         future_date = (future_date - pd.to_datetime(self.df["date"].min())) / np.timedelta64(365, 'D')
         prediction = int(self.model.predict([[future_date]])[0])
-        # print(f"Prediction for {future_date}: {prediction}")
         return prediction
-
-
-# model = WinIndexModel(win_index)
-# mse = model.evaluate()
-# prediction = model.predict("2023-01-11")
-
 
 class MSE_Prediction:
     def __init__(self, win_index, future_date):
@@ -185,10 +129,13 @@ class MSE_Prediction:
         min_pair = min(self.pairs, key=lambda x: x[0])
         min_first = min_pair[0]
         min_second = min_pair[1]
-        # print("Smallest first element:", min_first)
-        # print("Second element in pair for smallest first:", min_second)
         return min_second
 
+def search_number(win_index, number):
+    for item in win_index:
+        if item[0] == number:
+            return item[:3]
+    return None
 
 all_numbers = generate_all_combinations()
 file_path = "e:\\loto.xlsx"
@@ -196,36 +143,34 @@ winnings = process_lottery_data(file_path)
 win_index = map_win_index(all_numbers, winnings)
 win_index_asc = sorted(win_index, key=itemgetter(0))
 
-for r in range(50):
-    mse_pred = MSE_Prediction(win_index, "2023-01-22")
-    mse_pred.run_n_times(100)
+for r in range(20):
+    mse_pred = MSE_Prediction(win_index, "2024-01-21")
+    mse_pred.run_n_times(1000)
     best_prediction = mse_pred.get_min_pair()
     n = Neighbours(win_index_asc, best_prediction, all_numbers)
     pprint(n.select_lines())
 
-### show neighbours
-# if __name__ == "__main__":
-# show = win_index[-70:]
-# pprint(show)
+value = 8827091
+n = Neighbours(win_index_asc, value, all_numbers)
+pprint(n.select_lines())
+# Print the neighbours
+print(f"Before: {n.before}")
+print(f"After: {n.after}")
+print(f"Found: {n.found}")
 
-# factor = [prime_factorization(f[0]) for f in show]
-# pprint(factor)
+search_number(win_index, n.after)
+search_number(win_index, n.before)
 
-# value = 6067946
-# n = Neighbours(win_index_asc, value, all_numbers)
-# pprint(n.select_lines())
 
-# prime_factorization(value)
-# get the end time
-et = time.time()
 
-elapsed_time = et - st
-print('Execution time:', elapsed_time, 'seconds')
+
 
 # all_numbers.index((5, 22, 27, 30, 34, 49))
 
 with open('e:\\loto_gaps.txt', 'w') as f:
     for line in win_index:
-        # f.write(f"{line}\n")
         output = ";".join(map(str, line))
         f.write(output+'\n')
+        
+# pprint(win_index[-10:])
+pprint([x[0] for x in win_index[-100:]])
